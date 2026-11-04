@@ -1,6 +1,7 @@
 package com.back.domain.wiseSaying.repository;
 
 import com.back.domain.wiseSaying.entity.WiseSaying;
+import com.back.standard.dto.Page;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,32 @@ public class WiseSayingRepository {
         return wiseSayings.reversed();
     }
 
+    // 검색 조건에 맞는 것만 최신순으로 골라 page 번째 묶음(pageSize 개)을 돌려준다.
+    // keyword 가 비어 있으면 전체가 대상이다.
+    public Page<WiseSaying> findForList(String keywordType, String keyword, int page, int pageSize) {
+        List<WiseSaying> filtered = wiseSayings.reversed()
+                .stream()
+                .filter(e -> matches(e, keywordType, keyword))
+                .toList();
+
+        List<WiseSaying> content = filtered
+                .stream()
+                .skip((long) (page - 1) * pageSize)
+                .limit(pageSize)
+                .toList();
+
+        return new Page<>(content, page, pageSize, filtered.size());
+    }
+
+    private boolean matches(WiseSaying wiseSaying, String keywordType, String keyword) {
+        if (keyword == null || keyword.isBlank()) return true;
+
+        return switch (keywordType) {
+            case "author" -> wiseSaying.getAuthor().contains(keyword);
+            default -> wiseSaying.getSentence().contains(keyword);
+        };
+    }
+
     public Optional<WiseSaying> findById(int id) {
         return wiseSayings
                 .stream()
@@ -34,5 +61,9 @@ public class WiseSayingRepository {
 
     public boolean delete(int id) {
         return wiseSayings.removeIf(e -> e.getId() == id);
+    }
+
+    public int count() {
+        return wiseSayings.size();
     }
 }
